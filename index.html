@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>URANCOIN MINER</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root { --u-green: #39FF14; --u-dark: #0a0a0a; }
+        body { background: var(--u-dark); color: white; font-family: sans-serif; margin: 0; text-align: center; user-select: none; overflow: hidden; }
+        .header { padding: 15px; font-size: 20px; font-weight: bold; color: var(--u-green); text-shadow: 0 0 10px var(--u-green); }
+        #balance { font-size: 45px; margin: 5px 0; font-weight: 900; }
+        .coin-area { height: 55vh; display: flex; align-items: center; justify-content: center; }
+        .uran-coin { width: 220px; height: 220px; background: url('https://img.icons8.com/color/512/uranium.png') no-repeat center; background-size: contain; border: none; outline: none; filter: drop-shadow(0 0 30px var(--u-green)); transition: 0.1s; cursor: pointer; }
+        .uran-coin:active { transform: scale(0.92); }
+        .menu { position: fixed; bottom: 0; width: 100%; display: flex; background: rgba(255,255,255,0.05); backdrop-filter: blur(15px); border-top: 1px solid #333; }
+        .menu-btn { flex: 1; padding: 20px; color: #888; border: none; background: none; font-weight: bold; font-size: 14px; }
+        .active { color: var(--u-green); border-top: 2px solid var(--u-green); background: rgba(57, 255, 20, 0.05); }
+        .shop-item { background: #151515; margin: 10px; padding: 15px; border-radius: 15px; border: 1px solid #222; display: flex; justify-content: space-between; align-items: center; }
+        .exchange-btn { background: var(--u-green); color: black; padding: 10px 18px; border-radius: 10px; font-weight: bold; border: none; }
+        #energy-bar { width: 80%; height: 10px; background: #222; border-radius: 5px; margin: 10px auto; border: 1px solid #333; }
+        #energy-fill { height: 100%; background: var(--u-green); width: 100%; border-radius: 5px; transition: 0.3s; }
+    </style>
+</head>
+<body>
+
+<div id="game-page">
+    <div class="header">URANCOIN</div>
+    <div id="balance">0</div>
+    <div id="energy-bar"><div id="energy-fill"></div></div>
+    <div style="font-size: 12px; color: #666;">ENERGY: <span id="energy">1000</span>/1000</div>
+    <div class="coin-area"><button class="uran-coin" id="tapBtn"></button></div>
+</div>
+
+<div id="shop-page" style="display: none; padding: 20px;">
+    <div class="header">EXCHANGE SHOP 💎</div>
+    <div class="shop-item"><div><b>50 Stars</b><br><small>500k URAN</small></div><button class="exchange-btn" onclick="exchange(500000)">GET</button></div>
+    <div class="shop-item"><div><b>Premium</b><br><small>2M URAN</small></div><button class="exchange-btn" onclick="exchange(2000000)">GET</button></div>
+</div>
+
+<div class="menu">
+    <button class="menu-btn active" id="btn-mine">⛏ MINE</button>
+    <button class="menu-btn" id="btn-shop">💎 SHOP</button>
+</div>
+
+<script>
+    const tg = window.Telegram.WebApp;
+    const supabase = supabasejs.createClient('https://xgqctjchppduhbickbmd.supabase.co', 'sb_publishable_E2zmVN0qXUHAovMaet8nog_8-IwSm-V');
+    let balance = 0, energy = 1000;
+    const userId = tg.initDataUnsafe.user?.id || 12345;
+
+    document.getElementById('btn-mine').onclick = () => showPage('game-page', 'btn-mine');
+    document.getElementById('btn-shop').onclick = () => showPage('shop-page', 'btn-shop');
+
+    function showPage(p, b) {
+        document.getElementById('game-page').style.display = p==='game-page'?'block':'none';
+        document.getElementById('shop-page').style.display = p==='shop-page'?'block':'none';
+        document.querySelectorAll('.menu-btn').forEach(btn => btn.classList.remove('active'));
+        document.getElementById(b).classList.add('active');
+    }
+
+    document.getElementById('tapBtn').onclick = () => {
+        if(energy > 0) {
+            balance++; energy--; updateUI();
+            if(tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+            saveToDb();
+        }
+    };
+
+    function updateUI() {
+        document.getElementById('balance').innerText = balance.toLocaleString();
+        document.getElementById('energy').innerText = energy;
+        document.getElementById('energy-fill').style.width = (energy/10) + '%';
+    }
+
+    async function saveToDb() {
+        await supabase.from('users').update({ balance, energy }).eq('id', userId);
+    }
+
+    async function init() {
+        let { data } = await supabase.from('users').select('*').eq('id', userId).single();
+        if(data) { balance = data.balance; energy = data.energy; updateUI(); }
+        tg.expand();
+    }
+    init();
+
+    function exchange(p) {
+        if(balance >= p) tg.showAlert("Sorov yuborildi! Admin 24 soatda tasdiqlaydi.");
+        else tg.showAlert("URAN yetarli emas!");
+    }
+</script>
+</body>
+  </html>
+  
